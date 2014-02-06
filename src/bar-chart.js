@@ -129,8 +129,11 @@ dc.barChart = function (parent, chartGroup) {
         if (_barWidth === undefined) {
             var numberOfBars = _chart.xUnitCount();
 
-            if (_chart.isOrdinal() && !_gap)
+            if (_chart.isOrdinal()) {
                 _barWidth = Math.floor(_chart.x().rangeBand());
+                if (_gap)
+		    _barWidth -= _gap/2;
+            }
             else if (_gap)
                 _barWidth = Math.floor((_chart.xAxisLength() - (numberOfBars - 1) * _gap) / numberOfBars);
             else
