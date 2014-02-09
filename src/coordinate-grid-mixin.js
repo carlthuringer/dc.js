@@ -414,11 +414,14 @@ dc.coordinateGridMixin = function (_chart) {
         return _chart;
     };
 
+    _chart._initY = function() {
+    	_y = d3.scale.linear();
+        _y.domain([_chart.yAxisMin(), _chart.yAxisMax()]).rangeRound([_chart.yAxisHeight(), 0]);
+    };
+    
     _chart._prepareYAxis = function(g) {
-        if (_y === undefined || _chart.elasticY()) {
-            _y = d3.scale.linear();
-            _y.domain([_chart.yAxisMin(), _chart.yAxisMax()]).rangeRound([_chart.yAxisHeight(), 0]);
-        }
+        if (_y === undefined || _chart.elasticY())
+	    _chart._initY();
 
         _y.range([_chart.yAxisHeight(), 0]);
         _yAxis = _yAxis.scale(_y);
@@ -540,7 +543,11 @@ dc.coordinateGridMixin = function (_chart) {
 
     **/
     _chart.y = function (_) {
-        if (!arguments.length) return _y;
+        if (!arguments.length) {
+	    if (_y === undefined)
+		_chart._initY();
+	    return _y;
+        }
         _y = _;
         return _chart;
     };
