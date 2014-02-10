@@ -43,6 +43,8 @@ dc.rowChart = function (parent, chartGroup) {
 
     var _elasticX;
 
+    var _integerX = false;
+
     var _xAxis = d3.svg.axis().orient("bottom");
 
     var _rowData;
@@ -55,6 +57,8 @@ dc.rowChart = function (parent, chartGroup) {
             if (extent[0] > 0) extent[0] = 0;
             _x = d3.scale.linear().domain(extent)
                 .range([0, _chart.effectiveWidth()]);
+	    var xWidth = Math.abs(extent[1] - extent[0]);
+            _xAxis.ticks(_integerX && xWidth < 10 ? xWidth : 10);
         }
         _xAxis.scale(_x);
     }
@@ -308,6 +312,12 @@ dc.rowChart = function (parent, chartGroup) {
         if (!arguments.length) return _titleLabelOffsetX;
         _titleLabelOffsetX = o;
         return _chart;
+    };
+
+    _chart.integerX = function (o) {
+	if (!arguments.length) return _integerX;
+	_integerX = o;
+	return _chart;
     };
 
     function isSelectedRow (d) {
