@@ -116,6 +116,8 @@ dc.rowChart = function (parent, chartGroup) {
             });
     }
 
+    var bindKey = dc.pluck('key');
+
     function drawChart() {
         _rowData = _chart.data();
 
@@ -123,7 +125,7 @@ dc.rowChart = function (parent, chartGroup) {
         drawGridLines();
 
         var rows = _g.selectAll("g." + _rowCssClass)
-            .data(_rowData);
+            .data(_rowData, bindKey);
 
         createElements(rows);
         removeElements(rows);
