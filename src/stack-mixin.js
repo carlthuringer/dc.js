@@ -17,7 +17,7 @@ dc.stackMixin = function (_chart) {
     function prepareValues(layer, layerIdx) {
         var valAccessor = layer.accessor || _chart.valueAccessor();
         layer.name = String(layer.name || layerIdx);
-        layer.values = layer.group.all().map(function(d,i) {
+        layer.values = layer.data.map(function(d,i) {
             return {x: _chart.keyAccessor()(d,i),
                     y: layer.hidden ? null : valAccessor(d,i),
                     data: d,
@@ -73,14 +73,27 @@ dc.stackMixin = function (_chart) {
         return _chart;
     };
 
-    dc.override(_chart,'group', function (g,n,f) {
-        if (!arguments.length) return _chart._group();
+    var _stackGroup = {
+    	all: function() {
+    	    return _stack.filter(visability)
+    		.map(function(layer) {
+    		    return {
+    			data: layer.group.all(),
+    			name: layer.name,
+    			accessor: layer.accessor,
+    		    };
+    		});
+    	},
+    };
+    function stackGroup(g,n,f) {
+        if (!arguments.length) return _stackGroup;
         _stack = [];
         _titles = {};
         _chart.stack(g,n);
         if (f) _chart.valueAccessor(f);
-        return _chart._group(g,n);
-    });
+        return stackGroup.overridden(_stackGroup,n);
+    };
+    dc.override(_chart,'group', stackGroup);
 
     /**
     #### .hidableStacks([boolean])
@@ -145,9 +158,9 @@ dc.stackMixin = function (_chart) {
     };
 
     function flattenStack() {
-        return _chart.data().reduce(function(all,layer) {
-            return all.concat(layer.values);
-        },[]);
+        return d3.merge(_chart.data().map(function(d) {
+        	return d.values;        	
+        }));
     }
 
     _chart.xAxisMin = function () {
@@ -201,11 +214,13 @@ dc.stackMixin = function (_chart) {
         return !l.hidden;
     }
 
-    _chart.data(function() {
-        // return _stackLayout(_stack);
-        var layers = _stack.filter(visability);
+    function stackData() {
+    	if (arguments.length) return stackData.overridden(callback);
+    	
+        var layers = stackData.overridden();
         return layers.length ? _chart.stackLayout()(layers) : [];
-    });
+    };
+    dc.override(_chart, 'data', stackData);
 
     _chart._ordinalXDomain = function () {
         return flattenStack().map(dc.pluck('x'));
