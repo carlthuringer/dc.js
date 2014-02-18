@@ -217,6 +217,7 @@ dc.round.round = function(n) {
 dc.override = function(obj, functionName, newFunction) {
     var existingFunction = obj[functionName];
     obj["_" + functionName] = existingFunction;
+    newFunction.overriden = obj[functionName];
     obj[functionName] = newFunction;
 };
 
