@@ -15,7 +15,7 @@ dc.stackMixin = function (_chart) {
     var _hidableStacks = false;
 
     function prepareValues(layer, layerIdx) {
-        var valAccessor = layer.accessor || _chart.valueAccessor();
+        var valAccessor = layer.accessor;
         layer.name = String(layer.name || layerIdx);
         layer.values = layer.data.map(function(d,i) {
             return {x: _chart.keyAccessor()(d,i),
@@ -65,7 +65,7 @@ dc.stackMixin = function (_chart) {
         if (arguments.length <= 2)
             accessor = name;
 
-        var layer = {group:group};
+        var layer = {group: d3.functor(group)};
         if (typeof name === 'string') layer.name = name;
         if (typeof accessor === 'function') layer.accessor = accessor;
         _stack.push(layer);
@@ -73,22 +73,60 @@ dc.stackMixin = function (_chart) {
         return _chart;
     };
 
+    function getLayers() {
+	return _stack.filter(visability)
+    	    .map(function(layer) {
+    		return {
+    		    data: layer.group().all(),
+    		    name: layer.name,
+    		    accessor: layer.accessor || _chart.valueAccessor(),
+    		};
+	    });
+    }
+
     var _stackGroup = {
     	all: function() {
-	    var layers = _stack.filter(visability)
-    		.map(function(layer) {
-    		    return {
-    			data: layer.group().all(),
-    			name: layer.name,
-    			accessor: layer.accessor,
-    		    };
-		});
+	    var layers = getLayers();
   	    // return an array-like object which behaves like the general group.all() but retains the layers if you know where to look
   	    var all = d3.merge(layers.map(dc.pluck('data')));
   	    all.layers = layers;
   	    return all;
     	},
+	top: function(n) {
+	    var allLayers = getLayers();
+	    var allMap = d3.map();
+            var getKey = _chart.keyAccessor();
+    	    allLayers.forEach(function(layer) {
+		layer.data.forEach(function(d) {
+		    var key = getKey(d);
+		    var v = allMap.get(key);
+		    if (!v) {
+			v = [];
+			allMap.set(key, v);
+		    }
+		    v.push(layer.accessor(d));
+		});
+	    });
+	    var all = allMap.entries();
+	    var top = crossfilter.heapselect.by(function(d) {
+		return d3.sum(d.value);
+	    })(all, 0, all.length, n);
+  	    // return an array-like object which behaves like the general group.top() but retains the layers if you know where to look
+	    var topLayers = [];
+	    allLayers.forEach(function(layer, i) {
+		topLayers.push({
+		    data: top.map(function(d) {
+			return {key: d.key, value: d.value[i]};
+		    }),
+		    name: layer.name,
+		    accessor: layer.accessor,
+		});
+	    });
+	    top.layers = topLayers;
+	    return top;
+	},
     };
+
     function stackGroup(g,n,f) {
         if (!arguments.length) return _stackGroup;
         _stack = [];

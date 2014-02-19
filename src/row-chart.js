@@ -37,7 +37,7 @@ dc.rowChart = function (parent, chartGroup) {
     var _titleRowCssClass = "titlerow";
     var _renderTitleLabel = false;
 
-    var _chart = dc.capMixin(dc.marginMixin(dc.colorMixin(dc.baseMixin({}))));
+    var _chart = dc.capMixin(dc.stackMixin(dc.marginMixin(dc.colorMixin(dc.baseMixin({})))));
 
     var _x;
 
@@ -51,13 +51,14 @@ dc.rowChart = function (parent, chartGroup) {
 
     _chart.rowsCap = _chart.cap;
 
+    _chart.yAxisPadding = function() { return 0; };  // FIXME pretend to be coordinate-grid-ish for _chart.yAxisMax() call below
+
     function calculateAxisScale() {
         if (!_x || _elasticX) {
-            var extent = d3.extent(_rowData, _chart.cappedValueAccessor);
-            if (extent[0] > 0) extent[0] = 0;
-            _x = d3.scale.linear().domain(extent)
+            var xMax = _chart.yAxisMax();  // it's lying on it's side  :-)
+            _x = d3.scale.linear().domain([0, xMax])
                 .range([0, _chart.effectiveWidth()]);
-	    var xWidth = Math.abs(extent[1] - extent[0]);
+	    var xWidth = Math.abs(xMax);
             _xAxis.ticks(_integerX && xWidth < 10 ? xWidth : 10);
         }
         _xAxis.scale(_x);
@@ -89,10 +90,12 @@ dc.rowChart = function (parent, chartGroup) {
     };
 
     _chart.title(function (d) {
-        return _chart.cappedKeyAccessor(d) + ": " + _chart.cappedValueAccessor(d);
+        return d.x + ": " + d.y;
     });
 
-    _chart.label(_chart.cappedKeyAccessor);
+    var bindKey = dc.pluck('x');
+
+    _chart.label(bindKey);
 
     _chart.x = function(x){
         if(!arguments.length) return _x;
@@ -116,20 +119,31 @@ dc.rowChart = function (parent, chartGroup) {
             });
     }
 
-    var bindKey = dc.pluck('key');
-
     function drawChart() {
-        _rowData = _chart.data();
+	var data = _chart.data();
+        var layers = _g.selectAll("g.stack")
+            .data(data);
+
+        _rowData = data[0].data;  // all layers have the same rows
 
         drawAxis();
         drawGridLines();
 
-        var rows = _g.selectAll("g." + _rowCssClass)
-            .data(_rowData, bindKey);
+        layers
+            .enter()
+            .append("g")
+            .attr("class", function (d, i) {
+                return "stack " + "_" + i;
+            });
 
-        createElements(rows);
-        removeElements(rows);
-        updateElements(rows);
+        layers.each(function (d, i) {
+            var rows = d3.select(this).selectAll("g." + _rowCssClass)
+		.data(d.values, bindKey);
+
+            createElements(rows);
+            removeElements(rows);
+            updateElements(rows);
+	});
     }
 
     function createElements(rows) {
@@ -157,6 +171,7 @@ dc.rowChart = function (parent, chartGroup) {
         var rect = rows.attr("transform",function (d, i) {
                 return "translate(0," + ((i + 1) * _gap + i * height) + ")";
             }).select("rect")
+	    .attr("x", function(d) { return _x(d.y0); })
             .attr("height", height)
             .attr("fill", _chart.getColor)
             .on("click", onClick)
@@ -170,7 +185,7 @@ dc.rowChart = function (parent, chartGroup) {
         dc.transition(rect, _chart.transitionDuration())
             .attr("width", function (d) {
                 var start = _x(0) == -Infinity ? _x(1) : _x(0);
-                return Math.abs(start - _x(_chart.valueAccessor()(d)));
+                return Math.abs(start - _x(d.y));
             })
             .attr("transform", translateX);
 
@@ -241,11 +256,11 @@ dc.rowChart = function (parent, chartGroup) {
     };
 
     function onClick(d) {
-        _chart.onClick(d);
+        _chart.onClick(d.data);
     }
 
     function translateX(d) {
-        var x = _x(_chart.cappedValueAccessor(d)),
+        var x = _x(d.x),
             x0 = _x(0),
             s = x > x0 ? x0 : x;
         return "translate("+s+",0)";
@@ -323,8 +338,12 @@ dc.rowChart = function (parent, chartGroup) {
     };
 
     function isSelectedRow (d) {
-        return _chart.hasFilter(_chart.cappedKeyAccessor(d));
+        return _chart.hasFilter(d.x);
     }
+
+    _chart.isOrdinal = function() {
+	return true;
+    };
 
     return _chart.anchor(parent, chartGroup);
 };
