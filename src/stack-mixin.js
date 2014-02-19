@@ -75,23 +75,27 @@ dc.stackMixin = function (_chart) {
 
     var _stackGroup = {
     	all: function() {
-    	    return _stack.filter(visability)
+	    var layers = _stack.filter(visability)
     		.map(function(layer) {
     		    return {
-    			data: layer.group.all(),
+    			data: layer.group().all(),
     			name: layer.name,
     			accessor: layer.accessor,
     		    };
-    		});
+		});
+  	    // return an array-like object which behaves like the general group.all() but retains the layers if you know where to look
+  	    var all = d3.merge(layers.map(dc.pluck('data')));
+  	    all.layers = layers;
+  	    return all;
     	},
     };
     function stackGroup(g,n,f) {
         if (!arguments.length) return _stackGroup;
         _stack = [];
         _titles = {};
-        _chart.stack(g,n);
+        _chart.stack(stackGroup.overridden, n);
         if (f) _chart.valueAccessor(f);
-        return stackGroup.overridden(_stackGroup,n);
+        return stackGroup.overridden(g,n);
     };
     dc.override(_chart,'group', stackGroup);
 
@@ -214,10 +218,10 @@ dc.stackMixin = function (_chart) {
         return !l.hidden;
     }
 
-    function stackData() {
+    function stackData(callback) {
     	if (arguments.length) return stackData.overridden(callback);
     	
-        var layers = stackData.overridden();
+        var layers = stackData.overridden().layers;
         return layers.length ? _chart.stackLayout()(layers) : [];
     };
     dc.override(_chart, 'data', stackData);

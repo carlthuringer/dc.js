@@ -35,12 +35,12 @@ dc.capMixin = function (_chart) {
     var _capGroup = {
         all: function() {
             if (_cap == Infinity) {
-        	return _capGroup.group.all();
+        	return capGroup.overridden().all();
             }
-            var top = _capGroup.group.top(_cap);
+            var top = capGroup.overridden().top(_cap);
             var getKey = _chart.keyAccessor();
             var topSet = d3.set(top.map(getKey));
-            var others = _capGroup.group.all()
+            var others = capGroup.overridden().all()
         	.filter(function(d){
         	    return !topSet.has(getKey(d));
         	});
@@ -52,8 +52,7 @@ dc.capMixin = function (_chart) {
     };
     function capGroup(g,n) {
         if (!arguments.length) return _capGroup;
-        _capGroup.group = g;
-        return capGroup.overridden(_capGroup,n);
+        return capGroup.overridden(g,n);
     };
     dc.override(_chart, 'group', capGroup);
 
