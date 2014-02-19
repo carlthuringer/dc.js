@@ -14,17 +14,10 @@ dc.capMixin = function (_chart) {
 
     var _othersLabel = "Others";
 
-    var _othersGrouper = function (topRows) {
-        var topRowsSum = d3.sum(topRows, _chart.valueAccessor()),
-            allRows = _chart.group().all(),
-            allRowsSum = d3.sum(allRows, _chart.valueAccessor()),
-            topKeys = topRows.map(_chart.keyAccessor()),
-            allKeys = allRows.map(_chart.keyAccessor()),
-            topSet = d3.set(topKeys),
-            others = allKeys.filter(function(d){return !topSet.has(d);});
-        if (allRowsSum > topRowsSum)
-            return topRows.concat([{"others": others, "key": _othersLabel, "value": allRowsSum - topRowsSum}]);
-        return topRows;
+    var _othersGrouper = function (otherRows) {
+        var otherRowsSum = d3.sum(otherRows, _chart.valueAccessor()),
+            others = otherRows.map(_chart.keyAccessor());
+        return {"others": others, "key": _othersLabel, "value": otherRowsSum};
     };
 
     _chart.cappedKeyAccessor = function(d,i) {
@@ -38,18 +31,42 @@ dc.capMixin = function (_chart) {
             return d.value;
         return _chart.valueAccessor()(d,i);
     };
+    
+    var _capGroup = {
+        all: function() {
+            if (_cap == Infinity) {
+        	return _capGroup.group.all();
+            }
+            var top = _capGroup.group.top(_cap);
+            var getKey = _chart.keyAccessor();
+            var topSet = d3.set(top.map(getKey));
+            var others = _capGroup.group.all()
+        	.filter(function(d){
+        	    return !topSet.has(getKey(d));
+        	});
+            if (others.length) {
+        	top.others = _othersGrouper(others);
+            }
+            return top;
+        },
+    };
+    function capGroup(g,n) {
+        if (!arguments.length) return _capGroup;
+        _capGroup.group = g;
+        return capGroup.overridden(_capGroup,n);
+    };
+    dc.override(_chart, 'group', capGroup);
 
-    _chart.data(function(group) {
-        if (_cap == Infinity) {
-            return _chart._computeOrderedGroups(group.all());
-        } else {
-            var topRows = group.top(_cap); // ordered by crossfilter group order (default value)
-            topRows = _chart._computeOrderedGroups(topRows); // re-order using ordering (default key)
-            if (_othersGrouper) return _othersGrouper(topRows);
-            return topRows;
-        }
-    });
-
+    function capData(callback) {
+    	if (arguments.length) return capData.overridden(callback);
+    	var data = capData.overridden();
+    	if (data.others) {
+    	    data.push(data.others);
+    	}
+    	return data;
+    }
+    dc.override(_chart, 'data', capData);
+    
     /**
     #### .cap([count])
     Get or set the count of elements to that will be included in the cap.
