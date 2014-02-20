@@ -35,17 +35,17 @@ dc.capMixin = function (_chart) {
     var _capGroup = {
         all: function() {
             if (_cap == Infinity) {
-        	return capGroup.overridden().all();
+                return capGroup.overridden().all();
             }
             var top = capGroup.overridden().top(_cap);
             var getKey = _chart.keyAccessor();
             var topSet = d3.set(top.map(getKey));
             var others = capGroup.overridden().all()
-        	.filter(function(d){
-        	    return !topSet.has(getKey(d));
-        	});
+                .filter(function(d){
+                    return !topSet.has(getKey(d));
+                });
             if (others.length) {
-        	top.others = _othersGrouper(others);
+                top.others = _othersGrouper(others);
             }
             return top;
         },
