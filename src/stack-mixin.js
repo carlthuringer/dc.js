@@ -7,44 +7,13 @@ Stack Mixin is an mixin that provides cross-chart support of stackability using 
 dc.stackMixin = function (_chart) {
 
     var _stackLayout = d3.layout.stack()
-        .values(prepareValues);
+        .values(dc.pluck('values'));
 
     var _stack = [];
     var _valueAccessor = _chart.valueAccessor();
     var _titles = {};
 
     var _hidableStacks = false;
-
-    function prepareValues(layer, layerIdx) {
-        var valAccessor = layer.accessor;
-        layer.name = String(layer.name || layerIdx);
-        layer.values = layer.data.map(function(d,i) {
-            return {x: _chart.keyAccessor()(d,i),
-                    y: layer.hidden ? null : valAccessor(d,i),
-                    data: d,
-                    layer: layer.name,
-                    hidden: layer.hidden};
-        });
-
-        layer.values = layer.values.filter(domainFilter());
-        return layer.values;
-    }
-
-    function domainFilter() {
-        if (!_chart.x()) return d3.functor(true);
-        var xDomain = _chart.x().domain();
-        if (_chart.isOrdinal()) {
-            // TODO #416
-            //var domainSet = d3.set(xDomain);
-            return function(p) {
-                return true; //domainSet.has(p.x);
-            };
-        }
-        return function(p) {
-            //return true;
-            return p.x >= xDomain[0] && p.x <= xDomain[xDomain.length-1];
-        };
-    }
 
     /**
     #### .stack(group[, name, accessor])
@@ -73,10 +42,6 @@ dc.stackMixin = function (_chart) {
 
         return _chart;
     };
-
-    function getLayers() {
-        return
-    }
 
     var _stackGroup = {
         all: function() {
@@ -199,9 +164,7 @@ dc.stackMixin = function (_chart) {
     };
 
     function flattenStack() {
-        return d3.merge(_chart.data().map(function(d) {
-                return d.values;                
-        }));
+        return d3.merge(_chart.data().map(dc.pluck('values')));
     }
 
     _chart.xAxisMin = function () {
@@ -255,22 +218,50 @@ dc.stackMixin = function (_chart) {
         return !l.hidden;
     }
 
+    function domainFilter() {
+        if (!_chart.x()) return d3.functor(true);
+        var xDomain = _chart.x().domain();
+        if (_chart.isOrdinal()) {
+            // TODO #416
+            //var domainSet = d3.set(xDomain);
+            return function(p) {
+                return true; //domainSet.has(p.x);
+            };
+        }
+        return function(p) {
+            //return true;
+            return p.x >= xDomain[0] && p.x <= xDomain[xDomain.length-1];
+        };
+    }
+
     function stackData(callback) {
         if (arguments.length) return stackData.overridden(callback);
         
         var data = stackData.overridden();
         var getKey = _chart.keyAccessor();
         var getValue = _chart.valueAccessor();
+        var limitToDomain = domainFilter();
 
         // turn multi-valued data into multi-layered single-data
-        var layers = d3.transpose(
+        var layerData = d3.transpose(
             data.map(function(d) {
                 var key = getKey(d);
-                // pair single values with their key
-		return getValue(d).map(function(d) {
-		    return { key: key, value: d };
-		});
-	    }));
+                // pair single values with their key and keep the raw data around for later use
+                return getValue(d).map(function(v, i) {
+                    return {
+                        x: key,
+                        y: v,
+                        data: d.value[i],
+                    };
+                })
+                .filter(limitToDomain);
+            }));
+        var layers = layerData.map(function(data, i) {
+            return {
+                name: String(_stack[i].name || i),
+                values: data,
+            };
+        });
         return layers.length ? _chart.stackLayout()(layers) : [];
     };
     dc.override(_chart, 'data', stackData);

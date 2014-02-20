@@ -87,10 +87,11 @@ dc.barChart = function (parent, chartGroup) {
         var bars = layer.selectAll("rect.bar")
             .data(d.values, dc.pluck('x'));
 
+        var color = _chart.getColor(d);
         bars.enter()
             .append("rect")
             .attr("class", "bar")
-            .attr("fill", dc.pluck('data',_chart.getColor));
+            .attr("fill", color);
 
         if (_chart.renderTitle())
             bars.append("title").text(dc.pluck('data',_chart.title(d.name)));
@@ -117,7 +118,6 @@ dc.barChart = function (parent, chartGroup) {
             .attr("height", function (d) {
                 return barHeight(d);
             })
-            .attr("fill", dc.pluck('data',_chart.getColor))
             .select("title").text(dc.pluck('data',_chart.title(d.name)));
 
         dc.transition(bars.exit(), _chart.transitionDuration())
