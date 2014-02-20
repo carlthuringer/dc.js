@@ -56,14 +56,14 @@ dc.stackMixin = function (_chart) {
                     var key = getKey(d);
                     var v = allMap.get(key);
                     if (!v) {
-                        v = [];
-                        layers.forEach(function() { v.push(undefined); });  // ensure all layers get some "value" for every key
+                        v = { key: key, value: [] };
+                        layers.forEach(function() { v.value.push(undefined); });  // ensure all layers get some "value" for every key
                         allMap.set(key, v);
                     }
-                    v[i] = d;
+                    v.value[i] = d;
                 });
             });
-            return allMap.entries();
+            return allMap.values();
         },
         top: function(n) {
             var all = this.all();
