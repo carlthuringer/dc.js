@@ -110,10 +110,12 @@ dc.stackMixin = function (_chart) {
     dc.override(_chart, '_dataAccessor', stackDataAccessor);
 
     var _stackApply = function(f,d) {
-        return d3.transpose(d)
-            .map(function(layer) {
-                return stackApply.overridden()(f, layer);
-            });
+        return {
+            value: d3.transpose(d)
+                .map(function(layer) {
+                    return stackApply.overridden()(f, layer);
+                }),
+        };
     };
     function stackApply(f) {
         if (!arguments.length) return _stackApply;
@@ -260,6 +262,7 @@ dc.stackMixin = function (_chart) {
         var data = stackData.overridden();
         var getKey = _chart.keyAccessor();
         var getValue = _chart.valueAccessor();
+        var getData = _chart._dataAccessor();
         var limitToDomain = domainFilter();
 
         // turn multi-valued data into multi-layered single-data
@@ -271,7 +274,7 @@ dc.stackMixin = function (_chart) {
                     return {
                         x: key,
                         y: v,
-                        data: d.value[i],
+                        data: getData(d)[i],
                     };
                 })
                 .filter(limitToDomain);

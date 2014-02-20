@@ -37,9 +37,10 @@ dc.capMixin = function (_chart) {
     dc.override(_chart, 'keyAccessor', capKeyAccessor);
 
     function _capValueAccessor(d,i) {
+        var getVal = capValueAccessor.overridden();
         if (d.others)
-            return d.value;
-        return capValueAccessor.overridden()(d,i);
+            return getVal(d.value);
+        return getVal(d,i);
     };
     function capValueAccessor(d,i) {
         if (!arguments.length) return _capValueAccessor;
@@ -47,6 +48,18 @@ dc.capMixin = function (_chart) {
     };
     dc.override(_chart, 'valueAccessor', capValueAccessor);
     
+    var _capDataAccessor = function(d) {
+        var getData = capDataAccessor.overridden();
+        if (d.others)
+            return getData(d.value);
+        return getData(d);
+    };
+    function capDataAccessor(f) {
+        if (!arguments.length) return _capDataAccessor;
+        return capDataAccessor.overridden(f);
+    }
+    dc.override(_chart, '_dataAccessor', capDataAccessor);
+
     var _capGroup = {
         all: function() {
             var group = capGroup.overridden();

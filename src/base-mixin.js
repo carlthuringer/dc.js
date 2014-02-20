@@ -32,7 +32,7 @@ dc.baseMixin = function (_chart) {
     var _valueAccessor = dc.pluck('value');
     var _label = dc.pluck('key');
 
-    var _dataAccessor = dc.pluck('value');
+    var _dataAccessor = Object;
     var _apply = function(f,d) {
         return f(d);
     };
