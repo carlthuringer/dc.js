@@ -10,6 +10,7 @@ dc.stackMixin = function (_chart) {
         .values(prepareValues);
 
     var _stack = [];
+    var _valueAccessor = _chart.valueAccessor();
     var _titles = {};
 
     var _hidableStacks = false;
@@ -74,57 +75,37 @@ dc.stackMixin = function (_chart) {
     };
 
     function getLayers() {
-	return _stack.filter(visability)
-    	    .map(function(layer) {
-    		return {
-    		    data: layer.group().all(),
-    		    name: layer.name,
-    		    accessor: layer.accessor || _chart.valueAccessor(),
-    		};
-	    });
+        return
     }
 
     var _stackGroup = {
-    	all: function() {
-	    var layers = getLayers();
-  	    // return an array-like object which behaves like the general group.all() but retains the layers if you know where to look
-  	    var all = d3.merge(layers.map(dc.pluck('data')));
-  	    all.layers = layers;
-  	    return all;
-    	},
-	top: function(n) {
-	    var allLayers = getLayers();
-	    var allMap = d3.map();
+        all: function() {
+            var layers = _stack.filter(visability)
+                .map(function(layer) {
+                    return layer.group().all();
+                });
+            var allMap = d3.map();
             var getKey = _chart.keyAccessor();
-    	    allLayers.forEach(function(layer) {
-		layer.data.forEach(function(d) {
-		    var key = getKey(d);
-		    var v = allMap.get(key);
-		    if (!v) {
-			v = [];
-			allMap.set(key, v);
-		    }
-		    v.push(layer.accessor(d));
-		});
-	    });
-	    var all = allMap.entries();
-	    var top = crossfilter.heapselect.by(function(d) {
-		return d3.sum(d.value);
-	    })(all, 0, all.length, n);
-  	    // return an array-like object which behaves like the general group.top() but retains the layers if you know where to look
-	    var topLayers = [];
-	    allLayers.forEach(function(layer, i) {
-		topLayers.push({
-		    data: top.map(function(d) {
-			return {key: d.key, value: d.value[i]};
-		    }),
-		    name: layer.name,
-		    accessor: layer.accessor,
-		});
-	    });
-	    top.layers = topLayers;
-	    return top;
-	},
+            layers.forEach(function(layer, i) {
+                layer.forEach(function(d) {
+                    var key = getKey(d);
+                    var v = allMap.get(key);
+                    if (!v) {
+                        v = [];
+                        layers.forEach(function() { v.push(undefined); });  // ensure all layers get some "value" for every key
+                        allMap.set(key, v);
+                    }
+                    v[i] = d;
+                });
+            });
+            return allMap.entries();
+        },
+        top: function(n) {
+            var all = this.all();
+            return crossfilter.heapselect.by(function(d) {
+                return d3.sum(d.value);
+            })(all, 0, all.length, n);
+        },
     };
 
     function stackGroup(g,n,f) {
@@ -136,6 +117,24 @@ dc.stackMixin = function (_chart) {
         return stackGroup.overridden(g,n);
     };
     dc.override(_chart,'group', stackGroup);
+
+    var _stackValueAccessor = function(d) {
+        return d3.zip(
+            _stack.map(function(layer) {
+                return layer.accessor || _valueAccessor;
+            }),
+            d.value)
+            .map(function(args) {
+                return args[0](args[1]);
+            });
+    };
+
+    function stackValueAccessor(f) {
+        if (!arguments.length) return _stackValueAccessor;
+        _valueAccessor = f;
+        return stackValueAccessor.overridden(f);
+    }
+    dc.override(_chart, 'valueAccessor', stackValueAccessor);
 
     /**
     #### .hidableStacks([boolean])
@@ -179,7 +178,7 @@ dc.stackMixin = function (_chart) {
     };
 
     _chart.getValueAccessorByIndex = function (index) {
-        return _stack[index].accessor || _chart.valueAccessor();
+        return _stack[index].accessor || _valueAccessor;
     };
 
     _chart.yAxisMin = function () {
@@ -201,7 +200,7 @@ dc.stackMixin = function (_chart) {
 
     function flattenStack() {
         return d3.merge(_chart.data().map(function(d) {
-        	return d.values;        	
+                return d.values;                
         }));
     }
 
@@ -257,9 +256,21 @@ dc.stackMixin = function (_chart) {
     }
 
     function stackData(callback) {
-    	if (arguments.length) return stackData.overridden(callback);
-    	
-        var layers = stackData.overridden().layers;
+        if (arguments.length) return stackData.overridden(callback);
+        
+        var data = stackData.overridden();
+        var getKey = _chart.keyAccessor();
+        var getValue = _chart.valueAccessor();
+
+        // turn multi-valued data into multi-layered single-data
+        var layers = d3.transpose(
+            data.map(function(d) {
+                var key = getKey(d);
+                // pair single values with their key
+		return getValue(d).map(function(d) {
+		    return { key: key, value: d };
+		});
+	    }));
         return layers.length ? _chart.stackLayout()(layers) : [];
     };
     dc.override(_chart, 'data', stackData);
