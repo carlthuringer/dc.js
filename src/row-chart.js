@@ -124,10 +124,10 @@ dc.rowChart = function (parent, chartGroup) {
         var layers = _g.selectAll("g.stack")
             .data(data);
 
-        _rowData = data[0].data;  // all layers have the same rows
-
         drawAxis();
         drawGridLines();
+
+        _rowData = data[0].values;  // all layers have the same rows
 
         layers
             .enter()
@@ -136,34 +136,37 @@ dc.rowChart = function (parent, chartGroup) {
                 return "stack " + "_" + i;
             });
 
-        layers.each(function (d, i) {
+        layers.each(function (layer, i) {
             var rows = d3.select(this).selectAll("g." + _rowCssClass)
-		.data(d.values, bindKey);
+		.data(layer.values, bindKey);
 
-            createElements(rows);
-            removeElements(rows);
-            updateElements(rows);
+            createElements(layer, rows);
+            removeElements(layer, rows);
+            updateElements(layer, rows);
 	});
     }
 
-    function createElements(rows) {
+    function createElements(layer, rows) {
         var rowEnter = rows.enter()
             .append("g")
             .attr("class", function (d, i) {
                 return _rowCssClass + " _" + i;
             });
 
-        rowEnter.append("rect").attr("width", 0);
+        var color = _chart.getColor(layer);
+        rowEnter.append("rect")
+            .attr("width", 0)
+            .attr("fill", color);
 
         createLabels(rowEnter);
         updateLabels(rows);
     }
 
-    function removeElements(rows) {
+    function removeElements(layer, rows) {
         rows.exit().remove();
     }
 
-    function updateElements(rows) {
+    function updateElements(layer, rows) {
         var n = _rowData.length;
 
         var height = (_chart.effectiveHeight() - (n + 1) * _gap) / n;
@@ -171,9 +174,7 @@ dc.rowChart = function (parent, chartGroup) {
         var rect = rows.attr("transform",function (d, i) {
                 return "translate(0," + ((i + 1) * _gap + i * height) + ")";
             }).select("rect")
-	    .attr("x", function(d) { return _x(d.y0); })
             .attr("height", height)
-            .attr("fill", _chart.getColor)
             .on("click", onClick)
             .classed("deselected", function (d) {
                 return (_chart.hasFilter()) ? !isSelectedRow(d) : false;
@@ -183,6 +184,7 @@ dc.rowChart = function (parent, chartGroup) {
             });
 
         dc.transition(rect, _chart.transitionDuration())
+	    .attr("x", function(d) { return _x(d.y0); })
             .attr("width", function (d) {
                 var start = _x(0) == -Infinity ? _x(1) : _x(0);
                 return Math.abs(start - _x(d.y));
