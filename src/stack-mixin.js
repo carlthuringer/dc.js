@@ -10,7 +10,6 @@ dc.stackMixin = function (_chart) {
         .values(dc.pluck('values'));
 
     var _stack = [];
-    var _valueAccessor = _chart.valueAccessor();
     var _titles = {};
 
     var _hidableStacks = false;
@@ -67,8 +66,9 @@ dc.stackMixin = function (_chart) {
         },
         top: function(n) {
             var all = this.all();
+            var getVal = _chart.valueAccessor();
             return crossfilter.heapselect.by(function(d) {
-                return d3.sum(d.value);
+                return d3.sum(getVal(d));
             })(all, 0, all.length, n);
         },
     };
@@ -86,7 +86,7 @@ dc.stackMixin = function (_chart) {
     var _stackValueAccessor = function(d) {
         return d3.zip(
             _stack.map(function(layer) {
-                return layer.accessor || _valueAccessor;
+                return layer.accessor || stackValueAccessor.overridden();
             }),
             d.value)
             .map(function(args) {
@@ -96,10 +96,30 @@ dc.stackMixin = function (_chart) {
 
     function stackValueAccessor(f) {
         if (!arguments.length) return _stackValueAccessor;
-        _valueAccessor = f;
         return stackValueAccessor.overridden(f);
     }
     dc.override(_chart, 'valueAccessor', stackValueAccessor);
+
+    var _stackDataAccessor = function(d) {
+        return d.value.map(stackDataAccessor.overridden());
+    };
+    function stackDataAccessor(f) {
+        if (!arguments.length) return _stackDataAccessor;
+        return stackDataAccessor.overridden(f);
+    }
+    dc.override(_chart, '_dataAccessor', stackDataAccessor);
+
+    var _stackApply = function(f,d) {
+        return d3.transpose(d)
+            .map(function(layer) {
+                return stackApply.overridden()(f, layer);
+            });
+    };
+    function stackApply(f) {
+        if (!arguments.length) return _stackApply;
+        return stackApply.overridden(f);
+    }
+    dc.override(_chart, '_apply', stackApply);
 
     /**
     #### .hidableStacks([boolean])

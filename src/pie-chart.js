@@ -49,12 +49,6 @@ dc.pieChart = function (parent, chartGroup) {
 
     var _chart = dc.capMixin(dc.colorMixin(dc.baseMixin({})));
 
-    _chart.colorAccessor(_chart.cappedKeyAccessor);
-
-    _chart.title(function (d) {
-        return _chart.cappedKeyAccessor(d) + ": " + _chart.cappedValueAccessor(d);
-    });
-
     /**
     #### .slicesCap([cap])
     Get or set the maximum number of slices the pie chart will generate. The top slices are determined by
@@ -64,7 +58,6 @@ dc.pieChart = function (parent, chartGroup) {
     **/
     _chart.slicesCap = _chart.cap;
 
-    _chart.label(_chart.cappedKeyAccessor);
     _chart.renderLabel(true);
 
     _chart.transitionDuration(350);
@@ -283,7 +276,7 @@ dc.pieChart = function (parent, chartGroup) {
     }
 
     function isSelectedSlice(d) {
-        return _chart.hasFilter(_chart.cappedKeyAccessor(d.data));
+        return _chart.hasFilter(_chart.keyAccessor(d.data));
     }
 
     _chart._doRedraw = function () {
@@ -303,7 +296,7 @@ dc.pieChart = function (parent, chartGroup) {
     };
 
     function pieLayout() {
-        return d3.layout.pie().sort(null).value(_chart.cappedValueAccessor);
+        return d3.layout.pie().sort(null).value(_chart.valueAccessor());
     }
 
     function sliceTooSmall(d) {
@@ -312,7 +305,7 @@ dc.pieChart = function (parent, chartGroup) {
     }
 
     function sliceHasNoData(d) {
-        return _chart.cappedValueAccessor(d) === 0;
+        return _chart.valueAccessor()(d) === 0;
     }
 
     function tweenPie(b) {

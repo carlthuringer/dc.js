@@ -32,6 +32,11 @@ dc.baseMixin = function (_chart) {
     var _valueAccessor = dc.pluck('value');
     var _label = dc.pluck('key');
 
+    var _dataAccessor = dc.pluck('value');
+    var _apply = function(f,d) {
+        return f(d);
+    };
+
     var _ordering = dc.pluck('key');
     var _orderSort;
 
@@ -674,6 +679,18 @@ dc.baseMixin = function (_chart) {
     _chart.valueAccessor = function (_) {
         if (!arguments.length) return _valueAccessor;
         _valueAccessor = _;
+        return _chart;
+    };
+
+    _chart._dataAccessor = function(f) {
+        if (!arguments.length) return _dataAccessor;
+        _dataAccessor = f;
+        return _chart;
+    };
+
+    _chart._apply = function(f) {
+        if (!arguments.length) return _apply;
+        _apply = f;
         return _chart;
     };
 

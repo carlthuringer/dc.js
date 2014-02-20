@@ -14,30 +14,46 @@ dc.capMixin = function (_chart) {
 
     var _othersLabel = "Others";
 
-    var _othersGrouper = function (otherRows) {
-        var otherRowsSum = d3.sum(otherRows, _chart.valueAccessor()),
-            others = otherRows.map(_chart.keyAccessor());
-        return {"others": others, "key": _othersLabel, "value": otherRowsSum};
+    var _othersGrouper = function (group, otherRows) {
+        var others = otherRows.map(_chart.keyAccessor()),
+            otherData = otherRows.map(_chart._dataAccessor()),
+            otherValue = _chart._apply()(_othersOut, otherData);
+        return {"others": others, "key": _othersLabel, "value": otherValue};
     };
 
-    _chart.cappedKeyAccessor = function(d,i) {
+    var _othersOut = function (data) {
+        return data;
+    };
+
+    function _capKeyAccessor(d,i) {
         if (d.others)
             return d.key;
-        return _chart.keyAccessor()(d,i);
+        return capKeyAccessor.overridden()(d,i);
     };
+    function capKeyAccessor(d,i) {
+        if (!arguments.length) return _capKeyAccessor;
+        return capKeyAccessor.overridden(d,i);
+    };
+    dc.override(_chart, 'keyAccessor', capKeyAccessor);
 
-    _chart.cappedValueAccessor = function(d,i) {
+    function _capValueAccessor(d,i) {
         if (d.others)
             return d.value;
-        return _chart.valueAccessor()(d,i);
+        return capValueAccessor.overridden()(d,i);
     };
+    function capValueAccessor(d,i) {
+        if (!arguments.length) return _capValueAccessor;
+        return capValueAccessor.overridden(d,i);
+    };
+    dc.override(_chart, 'valueAccessor', capValueAccessor);
     
     var _capGroup = {
         all: function() {
+            var group = capGroup.overridden();
             if (_cap == Infinity) {
-                return capGroup.overridden().all();
+                return group.all();
             }
-            var top = capGroup.overridden().top(_cap);
+            var top = group.top(_cap);
             var getKey = _chart.keyAccessor();
             var topSet = d3.set(top.map(getKey));
             var others = capGroup.overridden().all()
@@ -45,7 +61,7 @@ dc.capMixin = function (_chart) {
                     return !topSet.has(getKey(d));
                 });
             if (others.length) {
-                top.others = _othersGrouper(others);
+                top.push(_othersGrouper(group, others));
             }
             return top;
         },
@@ -55,16 +71,6 @@ dc.capMixin = function (_chart) {
         return capGroup.overridden(g,n);
     };
     dc.override(_chart, 'group', capGroup);
-
-    function capData(callback) {
-    	if (arguments.length) return capData.overridden(callback);
-    	var data = capData.overridden();
-    	if (data.others) {
-    	    data.push(data.others);
-    	}
-    	return data;
-    }
-    dc.override(_chart, 'data', capData);
     
     /**
     #### .cap([count])
@@ -109,6 +115,17 @@ dc.capMixin = function (_chart) {
     _chart.othersGrouper = function (_) {
         if (!arguments.length) return _othersGrouper;
         _othersGrouper = _;
+        return _chart;
+    };
+
+    /**
+    #### .othersOut([outFunction])
+    Get or set the function that will reconstruct an *Others* instance of the input data from the set of values below the cap.
+    By default the out function records all the values below the cap.
+    **/
+    _chart.othersOut = function (_) {
+        if (!arguments.length) return _othersOut;
+        _othersOut = _;
         return _chart;
     };
 
