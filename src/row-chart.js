@@ -188,8 +188,7 @@ dc.rowChart = function (parent, chartGroup) {
             .attr("width", function (d) {
                 var start = _x(0) == -Infinity ? _x(1) : _x(0);
                 return Math.abs(start - _x(d.y));
-            })
-            .attr("transform", translateX);
+            });
 
         createTitles(rows);
         updateLabels(rows);
@@ -226,8 +225,6 @@ dc.rowChart = function (parent, chartGroup) {
                 .text(function (d) {
                     return _chart.label()(d);
                 });
-            dc.transition(lab, _chart.transitionDuration())
-                .attr("transform", translateX);
         }
         if (_chart.renderTitleLabel()) {
             var titlelab = rows.select("." + _titleRowCssClass)
@@ -241,8 +238,6 @@ dc.rowChart = function (parent, chartGroup) {
                     .text(function (d) {
                         return _chart.title()(d);
                     });
-            dc.transition(titlelab, _chart.transitionDuration())
-                .attr("transform", translateX);
         }
     }
 
@@ -259,13 +254,6 @@ dc.rowChart = function (parent, chartGroup) {
 
     function onClick(d) {
         _chart.onClick(d.data);
-    }
-
-    function translateX(d) {
-        var x = _x(d.x),
-            x0 = _x(0),
-            s = x > x0 ? x0 : x;
-        return "translate("+s+",0)";
     }
 
     _chart._doRedraw = function () {
