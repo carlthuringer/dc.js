@@ -110,6 +110,7 @@ dc.stackMixin = function (_chart) {
     dc.override(_chart, '_dataAccessor', stackDataAccessor);
 
     var _stackApply = function(f,d) {
+        // this needs to create something which can be accessed though dataAccessor
         return {
             value: d3.transpose(d)
                 .map(function(layer) {
@@ -262,7 +263,6 @@ dc.stackMixin = function (_chart) {
         var data = stackData.overridden();
         var getKey = _chart.keyAccessor();
         var getValue = _chart.valueAccessor();
-        var getData = _chart._dataAccessor();
         var limitToDomain = domainFilter();
 
         // turn multi-valued data into multi-layered single-data
@@ -274,7 +274,7 @@ dc.stackMixin = function (_chart) {
                     return {
                         x: key,
                         y: v,
-                        data: getData(d)[i],
+                        data: d,
                     };
                 })
                 .filter(limitToDomain);
