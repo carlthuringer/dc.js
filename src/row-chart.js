@@ -197,7 +197,9 @@ dc.rowChart = function (parent, chartGroup) {
     function createTitles(rows) {
         if (_chart.renderTitle()) {
             rows.selectAll("title").remove();
-            rows.append("title").text(dc.pluck('data',_chart.title(d.name)));
+            rows.append("title").text(function(d) {
+                return _chart.title(d.name)(_chart._dataAccessor()(d.data));
+            });
         }
     }
 

@@ -88,13 +88,17 @@ dc.barChart = function (parent, chartGroup) {
             .data(d.values, dc.pluck('x'));
 
         var color = _chart.getColor(d);
+
+        var title = function(d) {
+            return _chart.title(d.name)(_chart._dataAccessor()(d.data));
+        };
         bars.enter()
             .append("rect")
             .attr("class", "bar")
             .attr("fill", color);
 
         if (_chart.renderTitle())
-            bars.append("title").text(dc.pluck('data',_chart.title(d.name)));
+            bars.append("title").text(title);
 
         if (_chart.isOrdinal())
             bars.on("click", onClick);
@@ -118,7 +122,7 @@ dc.barChart = function (parent, chartGroup) {
             .attr("height", function (d) {
                 return barHeight(d);
             })
-            .select("title").text(dc.pluck('data',_chart.title(d.name)));
+            .select("title").text(title);
 
         dc.transition(bars.exit(), _chart.transitionDuration())
             .attr("height", 0)
