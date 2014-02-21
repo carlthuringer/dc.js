@@ -64,9 +64,9 @@ dc.capMixin = function (_chart) {
         all: function() {
             var group = capGroup.overridden();
             if (_cap == Infinity) {
-                return group.all();
+                return _chart._computeOrderedGroups(group.all());
             }
-            var top = group.top(_cap);
+            var top = _chart._computeOrderedGroups(group.top(_cap));
             var getKey = _chart.keyAccessor();
             var topSet = d3.set(top.map(getKey));
             var others = capGroup.overridden().all()
