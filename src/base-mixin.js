@@ -213,7 +213,6 @@ dc.baseMixin = function (_chart) {
     _chart.ordering = function(o) {
         if (!arguments.length) return _ordering;
         _ordering = o;
-        _orderSort = crossfilter.quicksort.by(_ordering);
         _chart.expireCache();
         return _chart;
     };
@@ -221,7 +220,9 @@ dc.baseMixin = function (_chart) {
     _chart._computeOrderedGroups = function(data) {
         if (data.length <= 1)
             return data;
-        if (!_orderSort) _orderSort = crossfilter.quicksort.by(_ordering);
+        if (!_orderSort) _orderSort = crossfilter.quicksort.by(function (d) {
+            return _ordering(_chart._dataAccessor()(d));
+        });
         return _orderSort(data,0,data.length);
     };
 
