@@ -84,6 +84,8 @@ dc.rowChart = function (parent, chartGroup) {
             .append("g")
             .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
 
+        _gridSection = _g.append('g');
+
         drawChart();
 
         return _chart;
@@ -103,20 +105,27 @@ dc.rowChart = function (parent, chartGroup) {
         return _chart;
     };
 
-    function drawGridLines() {
-        _g.selectAll("g.tick")
-            .select("line.grid-line")
-            .remove();
+    var _gridSection;
 
-        _g.selectAll("g.tick")
+    function drawGridLines() {
+        var gridLines = _gridSection.selectAll(".grid-line")
+            .data(_x.ticks(_xAxis.ticks()[0]));
+        gridLines.enter()
             .append("line")
-            .attr("class", "grid-line")
-            .attr("x1", 0)
-            .attr("y1", 0)
-            .attr("x2", 0)
-            .attr("y2", function () {
-                return -_chart.effectiveHeight();
-            });
+                .attr("class", "grid-line")
+                .attr("x1", _chart.effectiveWidth())
+                .attr("x2", _chart.effectiveWidth())
+                .attr("y1", 0)
+                .attr("y2", function () {
+                    return _chart.effectiveHeight();
+                });
+        gridLines
+            .transition()
+            .duration(_chart.transitionDuration())
+            .attr("x1", _x)
+            .attr("x2", _x);
+        gridLines.exit()
+            .remove()
     }
 
     function drawChart() {
@@ -124,7 +133,7 @@ dc.rowChart = function (parent, chartGroup) {
         var layers = _g.selectAll("g.stack")
             .data(data);
 
-        drawAxis();
+        calculateAxisScale();
         drawGridLines();
 
         _rowData = data[0].values;  // all layers have the same rows
