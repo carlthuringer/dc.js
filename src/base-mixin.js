@@ -358,9 +358,17 @@ dc.baseMixin = function (_chart) {
     * root.selectAll(".filter") elements are turned on if the chart has an active filter. The text content of this element is then replaced with the current filter value using the filter printer function. This type of element will be turned off automatically if the filter is cleared.
 
     **/
+    var _resetter = function(d, on) {
+        d.style("display", on ? null : "none");
+    };
+    _chart.resetter = function(f) {
+        if (!arguments.length) return _resetter;
+        _resetter = f;
+        return _chart;
+    }
     _chart.turnOnControls = function () {
         if (_root) {
-            _chart.selectAll(".reset").style("display", null);
+            _chart.resetter()(_chart.selectAll(".reset"), true);
             _chart.selectAll(".filter").text(_filterPrinter(_chart.filters())).style("display", null);
         }
         return _chart;
@@ -368,7 +376,7 @@ dc.baseMixin = function (_chart) {
 
     _chart.turnOffControls = function () {
         if (_root) {
-            _chart.selectAll(".reset").style("display", "none");
+            _chart.resetter()(_chart.selectAll(".reset"), false);
             _chart.selectAll(".filter").style("display", "none").text(_chart.filter());
         }
         return _chart;
