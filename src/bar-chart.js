@@ -290,5 +290,10 @@ dc.barChart = function (parent, chartGroup) {
         return max;
     });
 
+    // provide the bar width after the chart has been rendered
+    _chart.barWidth = function() {
+        return _barWidth;
+    };
+
     return _chart.anchor(parent, chartGroup);
 };
