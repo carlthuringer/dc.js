@@ -735,7 +735,6 @@ dc.baseMixin = function (_chart) {
     _chart.ordering = function(o) {
         if (!arguments.length) return _ordering;
         _ordering = o;
-        _orderSort = crossfilter.quicksort.by(_ordering);
         _chart.expireCache();
         return _chart;
     };
@@ -743,7 +742,9 @@ dc.baseMixin = function (_chart) {
     _chart._computeOrderedGroups = function(data) {
         if (data.length <= 1)
             return data;
-        if (!_orderSort) _orderSort = crossfilter.quicksort.by(_ordering);
+        if (!_orderSort) _orderSort = crossfilter.quicksort.by(function (d) {
+            return _ordering(_chart._dataAccessor()(d));
+        });
         return _orderSort(data,0,data.length);
     };
 
@@ -879,9 +880,17 @@ dc.baseMixin = function (_chart) {
     * root.selectAll(".filter") elements are turned on if the chart has an active filter. The text content of this element is then replaced with the current filter value using the filter printer function. This type of element will be turned off automatically if the filter is cleared.
 
     **/
+    var _resetter = function(d, on) {
+        d.style("display", on ? null : "none");
+    };
+    _chart.resetter = function(f) {
+        if (!arguments.length) return _resetter;
+        _resetter = f;
+        return _chart;
+    }
     _chart.turnOnControls = function () {
         if (_root) {
-            _chart.selectAll(".reset").style("display", null);
+            _chart.resetter()(_chart.selectAll(".reset"), true);
             _chart.selectAll(".filter").text(_filterPrinter(_chart.filters())).style("display", null);
         }
         return _chart;
@@ -889,7 +898,7 @@ dc.baseMixin = function (_chart) {
 
     _chart.turnOffControls = function () {
         if (_root) {
-            _chart.selectAll(".reset").style("display", "none");
+            _chart.resetter()(_chart.selectAll(".reset"), false);
             _chart.selectAll(".filter").style("display", "none").text(_chart.filter());
         }
         return _chart;
@@ -1620,6 +1629,7 @@ dc.coordinateGridMixin = function (_chart) {
 
     var _brush = d3.svg.brush();
     var _brushOn = true;
+    var _brushOver = true;
     var _round;
 
     var _renderHorizontalGridLine = false;
@@ -2308,8 +2318,8 @@ dc.coordinateGridMixin = function (_chart) {
             _brush.on("brushstart", _chart._disableMouseZoom);
             _brush.on("brushend", configureMouseZoom);
 
-            var gBrush = g.append("g")
-                .attr("class", "brush")
+            var gBrush = _brushOver ? g.append("g") : g.insert("g", ":first-child");
+            gBrush.attr("class", "brush")
                 .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")")
                 .call(_brush.x(_chart.x()));
             _chart.setBrushY(gBrush);
@@ -2602,6 +2612,21 @@ dc.coordinateGridMixin = function (_chart) {
     _chart.brushOn = function (_) {
         if (!arguments.length) return _brushOn;
         _brushOn = _;
+        return _chart;
+    };
+
+    /**
+    #### .brushOver([boolean])
+    By default the brush is displayed "over" the chart which disables all
+    other chart controls.  By setting this to false the brush will
+    instead be under the chart and the user must click on an empty
+    space to use it.  Other chart controls are no longer disabled by
+    the brush. Default value is "true".
+
+    **/
+    _chart.brushOver = function (_) {
+        if (!arguments.length) return _brushOver;
+        _brushOver = _;
         return _chart;
     };
 
@@ -3974,6 +3999,11 @@ dc.barChart = function (parent, chartGroup) {
         return max;
     });
 
+    // provide the bar width after the chart has been rendered
+    _chart.barWidth = function() {
+        return _barWidth;
+    };
+
     return _chart.anchor(parent, chartGroup);
 };
 
@@ -4168,7 +4198,7 @@ dc.lineChart = function (parent, chartGroup) {
     }
 
     function drawDots(chartBody, layers) {
-        if (!_chart.brushOn()) {
+        if (!(_chart.brushOn() && _chart.brushOver())) {
             var tooltipListClass = TOOLTIP_G_CLASS + "-list";
             var tooltips = chartBody.select("g." + tooltipListClass);
 
@@ -5846,6 +5876,8 @@ dc.rowChart = function (parent, chartGroup) {
             .append("g")
             .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
 
+        _gridSection = _g.append('g');
+
         drawChart();
 
         return _chart;
@@ -5865,20 +5897,27 @@ dc.rowChart = function (parent, chartGroup) {
         return _chart;
     };
 
-    function drawGridLines() {
-        _g.selectAll("g.tick")
-            .select("line.grid-line")
-            .remove();
+    var _gridSection;
 
-        _g.selectAll("g.tick")
+    function drawGridLines() {
+        var gridLines = _gridSection.selectAll(".grid-line")
+            .data(_x.ticks(_xAxis.ticks()[0]));
+        gridLines.enter()
             .append("line")
-            .attr("class", "grid-line")
-            .attr("x1", 0)
-            .attr("y1", 0)
-            .attr("x2", 0)
-            .attr("y2", function () {
-                return -_chart.effectiveHeight();
-            });
+                .attr("class", "grid-line")
+                .attr("x1", _chart.effectiveWidth())
+                .attr("x2", _chart.effectiveWidth())
+                .attr("y1", 0)
+                .attr("y2", function () {
+                    return _chart.effectiveHeight();
+                });
+        gridLines
+            .transition()
+            .duration(_chart.transitionDuration())
+            .attr("x1", _x)
+            .attr("x2", _x);
+        gridLines.exit()
+            .remove()
     }
 
     function drawChart() {
@@ -5886,7 +5925,7 @@ dc.rowChart = function (parent, chartGroup) {
         var layers = _g.selectAll("g.stack")
             .data(data);
 
-        drawAxis();
+        calculateAxisScale();
         drawGridLines();
 
         _rowData = data[0].values;  // all layers have the same rows

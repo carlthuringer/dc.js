@@ -42,6 +42,7 @@ dc.coordinateGridMixin = function (_chart) {
 
     var _brush = d3.svg.brush();
     var _brushOn = true;
+    var _brushOver = true;
     var _round;
 
     var _renderHorizontalGridLine = false;
@@ -730,8 +731,8 @@ dc.coordinateGridMixin = function (_chart) {
             _brush.on("brushstart", _chart._disableMouseZoom);
             _brush.on("brushend", configureMouseZoom);
 
-            var gBrush = g.append("g")
-                .attr("class", "brush")
+            var gBrush = _brushOver ? g.append("g") : g.insert("g", ":first-child");
+            gBrush.attr("class", "brush")
                 .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")")
                 .call(_brush.x(_chart.x()));
             _chart.setBrushY(gBrush);
@@ -1024,6 +1025,21 @@ dc.coordinateGridMixin = function (_chart) {
     _chart.brushOn = function (_) {
         if (!arguments.length) return _brushOn;
         _brushOn = _;
+        return _chart;
+    };
+
+    /**
+    #### .brushOver([boolean])
+    By default the brush is displayed "over" the chart which disables all
+    other chart controls.  By setting this to false the brush will
+    instead be under the chart and the user must click on an empty
+    space to use it.  Other chart controls are no longer disabled by
+    the brush. Default value is "true".
+
+    **/
+    _chart.brushOver = function (_) {
+        if (!arguments.length) return _brushOver;
+        _brushOver = _;
         return _chart;
     };
 

@@ -189,7 +189,7 @@ dc.lineChart = function (parent, chartGroup) {
     }
 
     function drawDots(chartBody, layers) {
-        if (!_chart.brushOn()) {
+        if (!(_chart.brushOn() && _chart.brushOver())) {
             var tooltipListClass = TOOLTIP_G_CLASS + "-list";
             var tooltips = chartBody.select("g." + tooltipListClass);
 
