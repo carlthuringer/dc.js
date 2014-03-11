@@ -51,6 +51,7 @@ dc.lineChart = function (parent, chartGroup) {
     var _tension = 0.7;
     var _defined;
     var _dashStyle;
+    var _stacked = true;
 
     _chart.transitionDuration(500);
     _chart._rangeBandPadding(1);
@@ -124,13 +125,17 @@ dc.lineChart = function (parent, chartGroup) {
         return _chart.getColor.call(d,d.values,i);
     }
 
+    function y(d) {
+        return _stacked ? d.y + d.y0 : d.y;
+    }
+
     function drawLine(layersEnter, layers) {
         var line = d3.svg.line()
             .x(function (d) {
                 return _chart.x()(d.x);
             })
             .y(function (d) {
-                return _chart.y()(d.y + d.y0);
+                return _chart.y()(y(d));
             })
             .interpolate(_interpolate)
             .tension(_tension);
@@ -158,10 +163,10 @@ dc.lineChart = function (parent, chartGroup) {
                     return _chart.x()(d.x);
                 })
                 .y(function (d) {
-                    return _chart.y()(d.y + d.y0);
+                    return _chart.y()(y(d));
                 })
                 .y0(function (d) {
-                    return _chart.y()(d.y0);
+                    return _chart.y()(_stacked ? d.y0 : 0);
                 })
                 .interpolate(_interpolate)
                 .tension(_tension);
@@ -224,16 +229,15 @@ dc.lineChart = function (parent, chartGroup) {
                         hideDot(dot);
                         hideRefLines(g);
                     })
-                    .append("title").text(dc.pluck('data', _chart.title(d.name)));
+                    .append("title").text(function(v) { return _chart.title(d.name)(_chart._dataAccessor()(v.data)); });
 
                 dots.attr("cx", function (d) {
                         return dc.utils.safeNumber(_chart.x()(d.x));
                     })
                     .attr("cy", function (d) {
-                        return dc.utils.safeNumber(_chart.y()(d.y + d.y0));
+                        return dc.utils.safeNumber(_chart.y()(y(d)));
                     })
-                    .attr("fill", _chart.getColor)
-                    .select("title").text(dc.pluck('data', _chart.title(d.name)));
+                    .attr("fill", _chart.getColor);
 
                 dots.exit().remove();
             });
@@ -358,6 +362,18 @@ dc.lineChart = function (parent, chartGroup) {
             return l;
         });
     });
+
+    /**
+    #### .stacked(stacked)
+    Whether this is a stacked line or an overlayed line chart.  Defaults to true (stacked).
+
+    **/
+    _chart.stacked = function(_) {
+        if (!arguments.length) return _stacked;
+        _stacked = _;
+        return _chart;
+    };
+        
 
     return _chart.anchor(parent, chartGroup);
 };
