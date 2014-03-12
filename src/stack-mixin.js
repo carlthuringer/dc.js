@@ -11,6 +11,7 @@ dc.stackMixin = function (_chart) {
 
     var _stack = [];
     var _titles = {};
+    var _stacked = true;
 
     var _hidableStacks = false;
 
@@ -180,7 +181,7 @@ dc.stackMixin = function (_chart) {
 
     _chart.yAxisMax = function () {
         var max = d3.max(flattenStack(), function (p) {
-            return p.y + p.y0;
+            return _chart._y(p);
         });
 
         return dc.utils.add(max, _chart.yAxisPadding());
@@ -317,6 +318,21 @@ dc.stackMixin = function (_chart) {
             dc.renderAll(_chart.chartGroup());
         }
     };
+
+    /**
+    #### .stacked(stacked)
+    Whether this is a stacked line or an overlayed line chart.  Defaults to true (stacked).
+
+    **/
+    _chart.stacked = function(_) {
+        if (!arguments.length) return _stacked;
+        _stacked = _;
+        return _chart;
+    };
+        
+    _chart._y = function(d) {
+        return _stacked ? d.y + d.y0 : d.y;
+    }
 
     return _chart;
 };
