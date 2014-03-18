@@ -309,10 +309,10 @@ dc.compositeChart = function (parent, chartGroup) {
         });
     }
 
-    delete _chart.yAxisMin;
-    function yAxisMin() {
+    function compositeYAxisMin() {
         return d3.min(getYAxisMin(leftYAxisChildren()));
     }
+    dc.override(_chart, 'yAxisMin', compositeYAxisMin);
 
     function rightYAxisMin() {
         return d3.min(getYAxisMin(rightYAxisChildren()));
@@ -324,10 +324,10 @@ dc.compositeChart = function (parent, chartGroup) {
         });
     }
 
-    delete _chart.yAxisMax;
-    function yAxisMax() {
+    function compositeYAxisMax() {
         return dc.utils.add(d3.max(getYAxisMax(leftYAxisChildren())), _chart.yAxisPadding());
     }
+    dc.override(_chart, 'yAxisMax', compositeYAxisMax);
 
     function rightYAxisMax() {
         return dc.utils.add(d3.max(getYAxisMax(rightYAxisChildren())), _chart.yAxisPadding());
