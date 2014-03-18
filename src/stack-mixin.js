@@ -12,6 +12,7 @@ dc.stackMixin = function (_chart) {
     var _stack = [];
     var _titles = {};
     var _stacked = true;
+    var _fullStackData = false;
 
     var _hidableStacks = false;
 
@@ -102,13 +103,30 @@ dc.stackMixin = function (_chart) {
     dc.override(_chart, 'valueAccessor', stackValueAccessor);
 
     var _stackDataAccessor = function(d) {
-        return d.value.map(stackDataAccessor.overridden());
+        if (_fullStackData) {
+            return d.value.map(stackDataAccessor.overridden());
+        }
+        return stackDataAccessor.overridden()(d.value[0]);
     };
     function stackDataAccessor(f) {
         if (!arguments.length) return _stackDataAccessor;
         return stackDataAccessor.overridden(f);
     }
     dc.override(_chart, '_dataAccessor', stackDataAccessor);
+
+    /**
+    #### .fullStackData(fullStackData)
+    Whether to provide all the stacks data to client functions such as
+    title, ordering, etc.  This is provided as an array of data in the
+    same order as the stacks were created.  Defaults to returning just
+    the first stack's data as a simple object.
+    
+    **/
+    _chart.fullStackData = function(_) {
+        if (!arguments.length) return _fullStackData;
+        _fullStackData = _;
+        return _chart;
+    };
 
     var _stackApply = function(f,d) {
         // this needs to create something which can be accessed though dataAccessor
