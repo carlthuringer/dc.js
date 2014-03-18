@@ -207,7 +207,7 @@ dc.rowChart = function (parent, chartGroup) {
         if (_chart.renderTitle()) {
             rows.selectAll("title").remove();
             rows.append("title").text(function(d) {
-                return _chart.title(d.name)(_chart._dataAccessor()(d.data));
+                return _chart.title(d.name)(_chart._clientDataAccessor()(d.data));
             });
         }
     }

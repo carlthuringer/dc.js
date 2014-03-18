@@ -33,6 +33,7 @@ dc.baseMixin = function (_chart) {
     var _label = dc.pluck('key');
 
     var _dataAccessor = Object;
+    var _clientDataAccessor = Object;
     var _apply = function(f,d) {
         return f(d);
     };
@@ -221,7 +222,7 @@ dc.baseMixin = function (_chart) {
         if (data.length <= 1)
             return data;
         if (!_orderSort) _orderSort = crossfilter.quicksort.by(function (d) {
-            return _ordering(_chart._dataAccessor()(d));
+            return _ordering(_chart._clientDataAccessor()(d));
         });
         return _orderSort(data,0,data.length);
     };
@@ -694,6 +695,12 @@ dc.baseMixin = function (_chart) {
     _chart._dataAccessor = function(f) {
         if (!arguments.length) return _dataAccessor;
         _dataAccessor = f;
+        return _chart;
+    };
+
+    _chart._clientDataAccessor = function(f) {
+        if (!arguments.length) return _clientDataAccessor;
+        _clientDataAccessor = f;
         return _chart;
     };
 

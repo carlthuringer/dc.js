@@ -103,16 +103,25 @@ dc.stackMixin = function (_chart) {
     dc.override(_chart, 'valueAccessor', stackValueAccessor);
 
     var _stackDataAccessor = function(d) {
-        if (_fullStackData) {
-            return d.value.map(stackDataAccessor.overridden());
-        }
-        return stackDataAccessor.overridden()(d.value[0]);
+        return d.value.map(stackDataAccessor.overridden());
     };
     function stackDataAccessor(f) {
         if (!arguments.length) return _stackDataAccessor;
         return stackDataAccessor.overridden(f);
     }
     dc.override(_chart, '_dataAccessor', stackDataAccessor);
+
+    var _stackClientDataAccessor = function(d) {
+        if (_fullStackData) {
+            return _stackDataAccessor(d);
+        }
+        return stackClientDataAccessor.overridden()(d.value[0]);
+    };
+    function stackClientDataAccessor(f) {
+        if (!arguments.length) return _stackClientDataAccessor;
+        return stackClientDataAccessor.overridden(f);
+    }
+    dc.override(_chart, '_clientDataAccessor', stackClientDataAccessor);
 
     /**
     #### .fullStackData(fullStackData)

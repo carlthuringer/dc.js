@@ -224,7 +224,7 @@ dc.lineChart = function (parent, chartGroup) {
                         hideDot(dot);
                         hideRefLines(g);
                     })
-                    .append("title").text(function(v) { return _chart.title(d.name)(_chart._dataAccessor()(v.data)); });
+                    .append("title").text(function(v) { return _chart.title(d.name)(_chart._clientDataAccessor()(v.data)); });
 
                 dots.attr("cx", function (d) {
                         return dc.utils.safeNumber(_chart.x()(d.x));

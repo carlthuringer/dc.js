@@ -90,7 +90,7 @@ dc.barChart = function (parent, chartGroup) {
         var color = _chart.getColor(d);
 
         var title = function(d) {
-            return _chart.title(d.name)(_chart._dataAccessor()(d.data));
+            return _chart.title(d.name)(_chart._clientDataAccessor()(d.data));
         };
         bars.enter()
             .append("rect")
