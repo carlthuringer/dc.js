@@ -110,7 +110,7 @@ dc.colorMixin = function(_chart) {
 
     **/
     _chart.getColor = function(d, i){
-        return _colors(_colorAccessor.call(this,d, i));
+        return _colors(_chart.colorAccessor().call(this,d, i));
     };
 
     _chart.colorCalculator = function(_){

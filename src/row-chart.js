@@ -38,6 +38,7 @@ dc.rowChart = function (parent, chartGroup) {
     var _renderTitleLabel = false;
 
     var _chart = dc.capMixin(dc.stackMixin(dc.marginMixin(dc.colorMixin(dc.baseMixin({})))));
+    _chart._stackedColor(false);  // default to a single group with a color range
 
     var _x;
 
@@ -46,8 +47,6 @@ dc.rowChart = function (parent, chartGroup) {
     var _integerX = false;
 
     var _xAxis = d3.svg.axis().orient("bottom");
-
-    var _rowData;
 
     _chart.rowsCap = _chart.cap;
 
@@ -136,8 +135,6 @@ dc.rowChart = function (parent, chartGroup) {
         calculateAxisScale();
         drawGridLines();
 
-        _rowData = data[0].values;  // all layers have the same rows
-
         layers
             .enter()
             .append("g")
@@ -162,10 +159,9 @@ dc.rowChart = function (parent, chartGroup) {
                 return _rowCssClass + " _" + i;
             });
 
-        var color = _chart.getColor(layer);
         rowEnter.append("rect")
             .attr("width", 0)
-            .attr("fill", color);
+            .attr("fill", function(d) { return _chart.getColor(d.data); });
 
         createLabels(rowEnter);
         updateLabels(rows);
@@ -176,7 +172,7 @@ dc.rowChart = function (parent, chartGroup) {
     }
 
     function updateElements(layer, rows) {
-        var n = _rowData.length;
+        var n = rows.data().length;
 
         var height = (_chart.effectiveHeight() - (n + 1) * _gap) / n;
 

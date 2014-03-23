@@ -13,6 +13,7 @@ dc.stackMixin = function (_chart) {
     var _titles = {};
     var _stacked = true;
     var _fullStackData = false;
+    var _stackedColor = true;
 
     var _hidableStacks = false;
 
@@ -40,9 +41,16 @@ dc.stackMixin = function (_chart) {
         if (typeof name === 'string') layer.name = name;
         if (typeof accessor === 'function') layer.accessor = accessor;
         _stack.push(layer);
+        if (_stack.length > 1) {
+            _stackedColor = true;
+        }
 
         return _chart;
     };
+
+    function layerName(i) {
+        return String(_stack[i].name || i);
+    }
 
     var _stackGroup = {
         all: function() {
@@ -297,19 +305,21 @@ dc.stackMixin = function (_chart) {
         var layerData = d3.transpose(
             data.map(function(d) {
                 var key = getKey(d);
-                // pair single values with their key and keep the raw data around for later use
+                // pair single values with their key and keep the (enhanced) raw data around for later use
                 return getValue(d).map(function(v, i) {
+                    var data = Object.create(d);
+                    data.layer = layerName(i);
                     return {
                         x: key,
                         y: v,
-                        data: d,
+                        data: data,
                     };
                 })
                 .filter(limitToDomain);
             }));
         var layers = layerData.map(function(data, i) {
             return {
-                name: String(_stack[i].name || i),
+                name: layerName(i),
                 values: data,
             };
         });
@@ -321,10 +331,23 @@ dc.stackMixin = function (_chart) {
         return flattenStack().map(dc.pluck('x'));
     };
 
-    _chart.colorAccessor(function (d) {
-        var layer = this.layer || this.name || d.name || d.layer;
-        return layer;
-    });
+    _chart._stackedColor = function(_) {
+        if (!arguments.length) return _stackedColor;
+        _stackedColor = _;
+        return _chart;
+    };
+
+    function stackColorAccessor(d, i) {
+        if (!arguments.length) return stackColorAccessor;
+        if (_stackedColor) {
+            var layer = this.layer || this.name || d.name || d.layer;
+            return layer;
+        } else {
+            return stackColorAccessor.overridden()(d, i);
+        }
+    };
+
+    dc.override(_chart,'colorAccessor', stackColorAccessor);
 
     _chart.legendables = function () {
         return _stack.map(function (layer, i) {
