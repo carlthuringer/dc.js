@@ -15,6 +15,10 @@ var groups = {
     "Mixed Group":    valueMixValSumGroup
 };
 
+process.on('uncaughtException', function(err) {
+console.log('Caught exception: ' + err);
+});
+
 var rowChartVows = function(group) {
 
     var newRowChart = function(id,f) {
@@ -65,8 +69,8 @@ var rowChartVows = function(group) {
             'dimension should be set': function (chart) {
                 assert.equal(chart.dimension(), valueDimension);
             },
-            'group should be set': function (chart) {
-                assert.equal(chart.group(),group);
+            'group should contain the correct amount of data': function (chart) {
+                assert.equal(chart.group().all().size, group.all().size);
             },
 
             'root g should be created': function (chart) {
