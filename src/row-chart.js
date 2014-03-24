@@ -91,7 +91,7 @@ dc.rowChart = function (parent, chartGroup) {
     };
 
     _chart.title(function (d) {
-        return d.x + ": " + d.y;
+        return _chart.keyAccessor()(d) + ": " + _chart.valueAccessor()(d);
     });
 
     var bindKey = dc.pluck('x');

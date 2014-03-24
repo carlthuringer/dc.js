@@ -94,14 +94,19 @@ dc.stackMixin = function (_chart) {
     dc.override(_chart,'group', stackGroup);
 
     var _stackValueAccessor = function(d) {
-        return d3.zip(
-            _stack.map(function(layer) {
-                return layer.accessor || stackValueAccessor.overridden();
-            }),
-            d.value)
-            .map(function(args) {
-                return args[0](args[1]);
-            });
+        if (d.value.length) {  // if an array value
+            return d3.zip(
+                _stack.map(function(layer) {
+                    return layer.accessor || stackValueAccessor.overridden();
+                }),
+                d.value)
+                .map(function(args) {
+                    return args[0](args[1]);
+                });
+        }
+        // simple case where the stack has already been removed
+        // FIXME doesn't work for higher stacks as the context has been lost
+        return stackValueAccessor.overridden()(d);
     };
 
     function stackValueAccessor(f) {
