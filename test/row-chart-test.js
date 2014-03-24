@@ -101,7 +101,7 @@ var rowChartVows = function(group) {
             },
             'row label text should be set': function (chart) {
                 chart.selectAll("svg g text.row").call(function (t) {
-                    assert.equal(t.text(), t.datum().key);
+                    assert.equal(t.text(), t.datum().x);
 
                 });
             },
@@ -196,7 +196,7 @@ var rowChartVows = function(group) {
                 chart.filter('22');
                 chart.render();
                 chart.selectAll("g.row rect").each(function (d) {
-                    if (d.key === '66' || d.key === '22')
+                    if (d.x === '66' || d.x === '22')
                         assert.equal(d3.select(this).attr('class'), 'selected');
                     else
                         assert.equal(d3.select(this).attr('class'), 'deselected');
