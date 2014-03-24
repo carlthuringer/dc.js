@@ -157,18 +157,12 @@ var rowChartVows = function(group) {
             'group order': {
                 topic: function (chart) {
                     resetAllFilters();
-                    return chart.ordering(dc.pluck('value'));
+                    return chart;
                 },
-                'group should be orderd': function (chart) {
-                    resetAllFilters();
-                    assert.deepEqual(chart.data().map(dc.pluck('value')).sort(d3.ascending),
-                                     chart.data().map(dc.pluck('value')));
+                'group can be ordered by custom function': function (chart) {
                     chart.ordering(dc.pluck('key'));
-                    assert.deepEqual(['22','33','44','55','66'], chart.data().map(dc.pluck('key')));
+                    assert.deepEqual(chart.data()[0].values.map(dc.pluck('x')), ['22','33','44','55','66']);
                 },
-                teardown: function (chart) {
-                    chart.ordering(dc.pluck('key'));
-                }
             },
 
             teardown: function () {
