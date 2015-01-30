@@ -5926,6 +5926,7 @@ dc.rowChart = function (parent, chartGroup) {
             .data(data);
 
         calculateAxisScale();
+        drawAxis();
         drawGridLines();
 
         _rowData = data[0].values;  // all layers have the same rows
